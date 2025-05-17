@@ -1,4 +1,4 @@
-![git.png](../../../assets/git.png)
+![git.png](../../../assets/git.jpg)
 
 # Git
 

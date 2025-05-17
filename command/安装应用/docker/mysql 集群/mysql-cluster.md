@@ -36,12 +36,146 @@ docker network create mysql-cluster
 ## 创建数据目录
 
 > 为了方便数据持久化,我们在宿主机上创建一个目录,用来存放 Mysql 的数据。
-> 我这里编写了一个脚本,用来创建数据目录,并且将数据目录挂载到容器中。
+>
+我这里编写了一个脚本,用来创建数据目录,并且将数据目录挂载到容器中。[createMysqlDataDir.sh](../../../../scripts/createMysqlDataDir.sh)
 
 ```bash
+mkdir /opt/mysql/mysql-cluster/config
+mkdir /opt/mysql/mysql-cluster/data
+```
+
+## 创建集群方式
+
+- 运行 docker 命令
+- 使用 docker-compose
+
+### 运行 docker 命令
+
+**实例1**
+
+```shell
+docker run -it -d \     # -it: 以交互模式运行容器（保留终端输入能力）
+  --name mysql_instance_1 \  # 容器名称
+  -p 3001:3306 \  # 将宿主机的 3001 端口映射到容器的 3306 端口（MySQL 默认端口）
+  --net mysql-cluster \      # 使用名为 mysql-cluster 的自定义 Docker 网络
+  -m 400m \   # 设置容器内存限制为 400MB
+  -v /opt/mysql/mysql_cluster_instance1/data:/var/lib/mysql \        # 挂载数据目录
+  -v /opt/mysql/mysql_cluster_instance1/config:/etc/mysql/conf.d \   # 挂载配置目录
+  -e MYSQL_ROOT_PASSWORD=instance_1 \  # 设置 MySQL root 用户的密码
+  -e TZ=Asia/Shanghai \   # 设置时区为上海
+  --privileged=true \  # 允许容器访问宿主机的所有设备
+  mysql:8.0.23 \     # 使用 MySQL 8.0.23 镜像
+  --lower_case_table_names=1   # 设置表名不区分大小写
+```
+
+**实例2**
+
+```shell
+docker run -it -d \     # -it: 以交互模式运行容器（保留终端输入能力）
+  --name mysql_instance_2 \  # 容器名称
+  -p 3002:3306 \  # 将宿主机的 3001 端口映射到容器的 3306 端口（MySQL 默认端口）
+  --net mysql-cluster \      # 使用名为 mysql-cluster 的自定义 Docker 网络
+  -m 400m \   # 设置容器内存限制为 400MB
+  -v /opt/mysql/mysql_cluster_instance2/data:/var/lib/mysql \        # 挂载数据目录
+  -v /opt/mysql/mysql_cluster_instance2/config:/etc/mysql/conf.d \   # 挂载配置目录
+  -e MYSQL_ROOT_PASSWORD=instance_2 \  # 设置 MySQL root 用户的密码
+  -e TZ=Asia/Shanghai \   # 设置时区为上海
+  --privileged=true \  # 允许容器访问宿主机的所有设备
+  mysql:8.0.23 \     # 使用 MySQL 8.0.23 镜像
+  --lower_case_table_names=1   # 设置表名不区分大小写
+```
+
+**实例2**
+
+```shell
+docker run -it -d \     # -it: 以交互模式运行容器（保留终端输入能力）
+  --name mysql_instance_3 \  # 容器名称
+  -p 3003:3306 \  # 将宿主机的 3001 端口映射到容器的 3306 端口（MySQL 默认端口）
+  --net mysql-cluster \      # 使用名为 mysql-cluster 的自定义 Docker 网络
+  -m 400m \   # 设置容器内存限制为 400MB
+  -v /opt/mysql/mysql_cluster_instance3/data:/var/lib/mysql \        # 挂载数据目录
+  -v /opt/mysql/mysql_cluster_instance3/config:/etc/mysql/conf.d \   # 挂载配置目录
+  -e MYSQL_ROOT_PASSWORD=instance_2 \  # 设置 MySQL root 用户的密码
+  -e TZ=Asia/Shanghai \   # 设置时区为上海
+  --privileged=true \  # 允许容器访问宿主机的所有设备
+  mysql:8.0.23 \     # 使用 MySQL 8.0.23 镜像
+  --lower_case_table_names=1   # 设置表名不区分大小写
+```
+
+> 上述方式中,我们需要手动创建数据目录,并且在每次启动容器时都需要指定数据目录的挂载路径,比较麻烦。
+> 下面我们使用 docker-compose 来创建 Mysql 集群。
+
+### 使用 docker-compose 创建 Mysql 集群
+#### 目录结构
+.
+├── docker-compose.yml  # 容器编排配置
+├── .env                # 环境变量
+└── mysql/      # 数据与配置目录（自动生成）
+├── mysql_cluster_instance1/
+├── mysql_cluster_instance2/
+└── mysql_cluster_instance3/
+
+#### 创建 .env 文件
+```shell
+# .env
+MYSQL_VERSION=8.0.23
+TZ=Asia/Shanghai
+MEMORY_LIMIT=400m
+
+INSTANCE_NUM=1
+
+INSTANCE_COUNT=3
+
+# 实例基础配置（按序号递增）
+INSTANCE_PORT_START=3001
+MYSQL_ROOT_PASSWORD_PREFIX=instance_
+```
+
+#### compose 文件 <img src="https://img.shields.io/badge/Status-Pending-yellow" alt="Status"></img>
+
+```shell
+# docker-compose.yml
+# version: '3.8'
+
+services:
+  # 动态生成多个实例
+  mysql-instance:
+    image: mysql:${MYSQL_VERSION}
+    container_name: mysql_instance_${INSTANCE_COUNT}
+    ports:
+      - ${INSTANCE_PORT_START}:3306
+    networks:
+      - mysql-cluster
+    volumes:
+      - ./mysql/mysql_cluster_instance${INSTANCE_COUNT}/data:/var/lib/mysql
+      - ./mysql/mysql_cluster_instance${INSTANCE_COUNT}/config:/etc/mysql/conf.d
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD_PREFIX}${INSTANCE_COUNT}
+      TZ: ${TZ}
+    command: --lower_case_table_names=1
+    privileged: true
+    deploy:
+      resources:
+        limits:
+          memory: ${MEMORY_LIMIT}
+    # 通过 --scale 参数控制实例数量
+    scale: ${INSTANCE_COUNT}
+
+# 自定义网络
+networks:
+  mysql-cluster:
+    driver: bridge
 
 ```
 
+#### 启动实例
+```shell
+# 启动所有实例（3个）
+docker-compose --env-file .env up -d
+
+# 验证运行状态
+docker-compose ps
+```
 
 
 ## 题外话: 为什么我在window navicat 连接不到虚拟机的 mysql？

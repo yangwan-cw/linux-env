@@ -1,0 +1,32 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # 动态生成多个实例
+  mysql-instance:
+    image: mysql:${MYSQL_VERSION}
+    container_name: "mysql_instance_${INSTANCE_NUM}"
+    ports:
+      - "${INSTANCE_PORT}:3306"
+    networks:
+      - ${DOCKER_NETWORK}
+    volumes:
+      - "./mysql/mysql_cluster_instance${INSTANCE_NUM}/data:/var/lib/mysql"
+      - "./mysql/mysql_cluster_instance${INSTANCE_NUM}/config:/etc/mysql/conf.d"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD_PREFIX}${INSTANCE_NUM}"
+      TZ: ${TZ}
+    command: --lower_case_table_names=1
+    privileged: true
+    deploy:
+      resources:
+        limits:
+          memory: ${MEMORY_LIMIT}
+
+    # 通过 --scale 参数控制实例数量
+    scale: ${INSTANCE_COUNT}
+
+# 自定义网络
+networks:
+  ${DOCKER_NETWORK}:
+    driver: bridge
