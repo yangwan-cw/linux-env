@@ -30,7 +30,7 @@ centos-7.6
 # 仓库信息
 [![Forks](https://img.shields.io/github/forks/yangwan-cw/linux-env)](https://github.com/yangwan-cw/linux-env/network/members)
 [![Stars](https://img.shields.io/github/stars/yangwan-cw/linux-env)](https://github.com/yangwan-cw/linux-env/stargazers)
-
+[![Commits](https://img.shields.io/github/commit-activity/t/yangwan-cw/linux-env)](https://img.shields.io/github/commit-activity/t/yangwan-cw/linux-env)
 
 
 # 贡献者
