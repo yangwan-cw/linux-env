@@ -27,7 +27,7 @@ centos-7.6
 - 网络
 - 设备
 
-# 贡献   
+# 仓库信息
 [![Forks](https://img.shields.io/github/forks/yangwan-cw/linux-env)](https://github.com/yangwan-cw/linux-env/network/members)
 [![Stars](https://img.shields.io/github/stars/yangwan-cw/linux-env)](https://github.com/yangwan-cw/linux-env/stargazers)
 
