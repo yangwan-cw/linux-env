@@ -1,32 +1,103 @@
-# docker-compose.yml
-version: '3.8'
+x-sql-defaults: &mysql-defaults
+  image: mysql:${MYSQL_VERSION}
+  networks:
+    - ${MYSQL_CLUSTER_NETWORK}
+  environment:
+     TZ: ${TZ}
+  volumes:
+    - "/etc/localtime:/etc/localtime:ro"
+    - "/etc/timezone:/etc/timezone:ro"
+  deploy:
+    resources:
+      limits:
+        memory: ${MEMORY_LIMIT}
+  command: --lower_case_table_names=1
+  restart: unless-stopped
 
+x-jdk-defaults: &jdk-defaults
+  image: ${JDK}
+  container_name: ${JDK_NAME}
+  ports:
+    - "${JDK_PORT}:3307"
+  deploy:
+    resources:
+      limits:
+        memory: ${MEMORY_LIMIT}
+  networks:
+    - ${JDK_NETWORK}
+  volumes:
+    - "${JDK_DATA}:/root/ss"
+  environment:
+     TZ: ${TZ}
 services:
-  # 动态生成多个实例
-  mysql-instance:
-    image: mysql:${MYSQL_VERSION}
-    container_name: "mysql_instance_${INSTANCE_NUM}"
-    ports:
-      - "${INSTANCE_PORT}:3306"
-    networks:
-      - ${DOCKER_NETWORK}
+  ss:
+    <<: *jdk-defaults
+    privileged: true      # 特权模式
+    tty: true             # 对应 -t 参数
+    stdin_open: true      # 对应 -i 参数
+    command: bash         # 保持容器运行并进入交互式 Shell
+  mysql1:
+    <<: *mysql-defaults
     volumes:
-      - "./mysql/mysql_cluster_instance${INSTANCE_NUM}/data:/var/lib/mysql"
-      - "./mysql/mysql_cluster_instance${INSTANCE_NUM}/config:/etc/mysql/conf.d"
+    - "./mysql/${MYSQL_INSTANCE1_DIR}/data:/var/lib/mysql"
+    - "./mysql/${MYSQL_INSTANCE1_DIR}/config:/etc/mysql/conf.d"
+  #  - "${MYSQL_INIT1}:/docker-entrypoint-initdb.d/init.sql"  # 挂载初始化 SQL
+    ports:
+      - "${MYSQL_INSTANCE1_PORT}:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD_PREFIX}${INSTANCE_NUM}"
-      TZ: ${TZ}
-    command: --lower_case_table_names=1
-    privileged: true
-    deploy:
-      resources:
-        limits:
-          memory: ${MEMORY_LIMIT}
+      MYSQL_ROOT_PASSWORD: "${MYSQL_INSTANCE1_PASSWORD}"  # 实例1专用密码
+      container_name: ${CONTAINER1_NAME}
+      
 
-    # 通过 --scale 参数控制实例数量
-    scale: ${INSTANCE_COUNT}
-
-# 自定义网络
+  mysql2:
+    <<: *mysql-defaults
+    ports:
+      - "${MYSQL_INSTANCE2_PORT}:3306"
+    volumes:
+    - "./mysql/${MYSQL_INSTANCE2_DIR}/data:/var/lib/mysql"
+    - "./mysql/${MYSQL_INSTANCE2_DIR}/config:/etc/mysql/conf.d"
+    - "${MYSQL_INIT2}:/docker-entrypoint-initdb.d/init.sql"  # 挂载初始化 SQL
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_INSTANCE2_PASSWORD}"  # 实例1专用密码
+      INSTANCE_DIR: ${MYSQL_INSTANCE2_DIR}
+      container_name: ${CONTAINER2_NAME}
+  mysql3:
+    <<: *mysql-defaults
+    ports:
+      - "${MYSQL_INSTANCE3_PORT}:3306"
+    volumes:
+    - "./mysql/${MYSQL_INSTANCE3_DIR}/data:/var/lib/mysql"
+    - "./mysql/${MYSQL_INSTANCE3_DIR}/config:/etc/mysql/conf.d"
+    - "${MYSQL_INIT3}:/docker-entrypoint-initdb.d/init.sql"  # 挂载初始化 SQL
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_INSTANCE3_PASSWORD}"  # 实例1专用密码
+      INSTANCE_DIR: ${MYSQL_INSTANCE3_DIR}
+      container_name: ${CONTAINER3_NAME}
+  mysql4:
+    <<: *mysql-defaults
+    ports:
+      - "${MYSQL_INSTANCE4_PORT}:3306"
+    volumes:
+    - "./mysql/${MYSQL_INSTANCE4_DIR}/data:/var/lib/mysql"
+    - "./mysql/${MYSQL_INSTANCE4_DIR}/config:/etc/mysql/conf.d"
+    - "${MYSQL_INIT4}:/docker-entrypoint-initdb.d/init.sql"  # 挂载初始化 SQL
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_INSTANCE4_PASSWORD}"  # 实例1专用密码
+      INSTANCE_DIR: ${MYSQL_INSTANCE4_DIR}
+      container_name: ${CONTAINER4_NAME}
+  mysql5:
+    <<: *mysql-defaults
+    ports:
+      - "${MYSQL_INSTANCE5_PORT}:3306"
+    volumes:
+    - "./mysql/${MYSQL_INSTANCE5_DIR}/data:/var/lib/mysql"
+    - "./mysql/${MYSQL_INSTANCE5_DIR}/config:/etc/mysql/conf.d"
+    - "${MYSQL_INIT5}:/docker-entrypoint-initdb.d/init.sql"  # 挂载初始化 SQL
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_INSTANCE5_PASSWORD}"  # 实例1专用密码
+      INSTANCE_DIR: ${MYSQL_INSTANCE5_DIR}
+      container_name: ${CONTAINER5_NAME}
 networks:
-  ${DOCKER_NETWORK}:
+  mysql_cluster:
     driver: bridge
+

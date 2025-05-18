@@ -44,9 +44,13 @@ create_instance_dirs(){
    echo "=== Creating instance ${instance_num} directories ==="
    mkdir -p "${instance_dir}/config"
    mkdir -p "${instance_dir}/data"
+   mkdir -p "${instance_dir}/mysqlInit"
+   touch ${instance_dir}/mysqlInit/init.sql
    echo "Created: ${instance_dir}"
    echo "  ├── config"
    echo "  └── data"
+   echo "  └── mysqlInit"
+   echo "  └──└──└──init.sql"
 }
 
 
@@ -63,7 +67,3 @@ for (( i=1; i<=${num_instances}; i++ )); do
     create_instance_dirs $i
 done
 echo "=== Directory creation completed ==="
-
-
-
-

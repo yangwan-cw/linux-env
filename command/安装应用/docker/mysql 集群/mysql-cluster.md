@@ -171,10 +171,10 @@ networks:
 #### 启动实例
 ```shell
 # 启动所有实例（3个）
-docker-compose --env-file .env up -d
+docker compose --env-file .env up -d
 
 # 验证运行状态
-docker-compose ps
+docker compose ps
 ```
 
 
